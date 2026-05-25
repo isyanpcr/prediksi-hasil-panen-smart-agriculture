@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgriML Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo-circle">AG</div>
+      <div>
+        <h1>AgriML</h1>
+        <p class="subtitle">Crop health & prediction</p>
+      </div>
+    </div>
+    <nav class="nav">
+      <button id="nav-predict" class="nav-btn active">Prediksi</button>
+      <button id="nav-dashboard" class="nav-btn">Dashboard</button>
+      <button id="toggle-theme" class="nav-btn" title="Ganti Tema" style="margin-left:10px;">
+        🌙
+      </button>
+    </nav>
+  </header>
+
+  <main class="main">
+    <section id="panel-predict" class="panel active-panel">
+      
+      <div class="card card-glow">
+        <h2><span style="vertical-align:middle;"></span> Prediksi Hasil Tanaman (Random Forest)</h2>
+        <form action="/predict" method="POST" class="predict-form">
+          <div class="form-row">
+            <label>Tanaman</label>
+            <select name="crop_id" required>
+              <option value="" disabled selected>Pilih Tanaman</option>
+              <option value="Carrot">Carrot</option>
+              <option value="Chilli">Chilli</option>
+              <option value="Potato">Potato</option>
+              <option value="Tomato">Tomato</option>
+              <option value="Wheat">Wheat</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Jenis Tanah</label>
+            <select name="soil_type" required>
+              <option value="" disabled selected>Pilih Jenis Tanah</option>
+              <option value="Alluvial Soil">Alluvial Soil</option>
+              <option value="Black Soil">Black Soil</option>
+              <option value="Chalky Soil">Chalky Soil</option>
+              <option value="Clay Soil">Clay Soil</option>
+              <option value="Loam Soil">Loam Soil</option>
+              <option value="Red Soil">Red Soil</option>
+              <option value="Sandy Soil">Sandy Soil</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Tahap Bibit</label>
+            <select name="seedling_stage" required>
+              <option value="" disabled selected>Pilih Tahap Bibit</option>
+              <option value="Flowering">Flowering</option>
+              <option value="Fruit/Grain/Bulb Formation">Fruit/Grain/Bulb Formation</option>
+              <option value="Germination">Germination</option>
+              <option value="Harvest">Harvest</option>
+              <option value="Maturation">Maturation</option>
+              <option value="Pollination">Pollination</option>
+              <option value="Seedling Stage">Seedling Stage</option>
+              <option value="Vegetative Growth / Root or Tuber Development">Vegetative Growth / Root or Tuber Development</option>
+            </select>
+          </div>
+          <div class="form-grid">
+            <div class="form-row">
+              <label>MOI</label>
+              <input type="number" name="moi" required min="0" step="any" />
+            </div>
+            <div class="form-row">
+              <label>Suhu (°C)</label>
+              <input type="number" name="temp" required min="-50" max="100" step="any" />
+            </div>
+            <div class="form-row">
+              <label>Kelembapan (%)</label>
+              <input type="number" name="humidity" required min="0" max="100" step="any" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn primary">Prediksi</button>
+            <button type="button" id="to-dashboard" class="btn ghost">Dashboard</button>
+          </div>
+        </form>
+        {% if result is not none %}
+        <p class="message" style="animation: bounceIn .7s;">
+          Hasil prediksi:
+          <strong>
+            {% if result == 2 %}Sangat Perlu (2){% elif result == 1 %}Perlu (1){% elif result == 0 %}Tidak (0){% endif %}
+          </strong>
+          <br>
+          <span style="font-size:13px;color:var(--muted);display:block;margin-top:4px;">
+            <em>
+              Keterangan hasil: Menunjukkan apakah tanaman membutuhkan irigasi atau tidak.
+              <br>
+              <b>Sangat Perlu (2):</b> Tanaman sangat membutuhkan irigasi.<br>
+              <b>Perlu (1):</b> Tanaman membutuhkan irigasi.<br>
+              <b>Tidak (0):</b> Tanaman tidak membutuhkan irigasi.
+            </em>
+          </span>
+        </p>
+        {% endif %}
+      </div>
+      
+      <div class="card card-glow">
+        <h2><span style="vertical-align:middle;"></span> Prediksi Hasil Tanaman (XGBoost)</h2>
+        <form action="/predict_xgb" method="POST" class="predict-form">
+          <div class="form-row">
+            <label>Tanaman</label>
+            <select name="crop_id_xgb" required>
+              <option value="" disabled selected>Pilih Tanaman</option>
+              <option value="Carrot">Carrot</option>
+              <option value="Chilli">Chilli</option>
+              <option value="Potato">Potato</option>
+              <option value="Tomato">Tomato</option>
+              <option value="Wheat">Wheat</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Jenis Tanah</label>
+            <select name="soil_type_xgb" required>
+              <option value="" disabled selected>Pilih Jenis Tanah</option>
+              <option value="Alluvial Soil">Alluvial Soil</option>
+              <option value="Black Soil">Black Soil</option>
+              <option value="Chalky Soil">Chalky Soil</option>
+              <option value="Clay Soil">Clay Soil</option>
+              <option value="Loam Soil">Loam Soil</option>
+              <option value="Red Soil">Red Soil</option>
+              <option value="Sandy Soil">Sandy Soil</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Tahap Bibit</label>
+            <select name="seedling_stage_xgb" required>
+              <option value="" disabled selected>Pilih Tahap Bibit</option>
+              <option value="Flowering">Flowering</option>
+              <option value="Fruit/Grain/Bulb Formation">Fruit/Grain/Bulb Formation</option>
+              <option value="Germination">Germination</option>
+              <option value="Harvest">Harvest</option>
+              <option value="Maturation">Maturation</option>
+              <option value="Pollination">Pollination</option>
+              <option value="Seedling Stage">Seedling Stage</option>
+              <option value="Vegetative Growth / Root or Tuber Development">Vegetative Growth / Root or Tuber Development</option>
+            </select>
+          </div>
+          <div class="form-grid">
+            <div class="form-row">
+              <label>MOI</label>
+              <input type="number" name="moi_xgb" required min="0" step="any" />
+            </div>
+            <div class="form-row">
+              <label>Suhu (°C)</label>
+              <input type="number" name="temp_xgb" required min="-50" max="100" step="any" />
+            </div>
+            <div class="form-row">
+              <label>Kelembapan (%)</label>
+              <input type="number" name="humidity_xgb" required min="0" max="100" step="any" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn primary">Prediksi (XGBoost)</button>
+          </div>
+        </form>
+        {% if xgb_result is not none %}
+        <p class="message" style="animation: bounceIn .7s;">
+          Hasil prediksi (XGBoost):
+          <strong>
+            {% if xgb_result == 2 %}Sangat Perlu (2){% elif xgb_result == 1 %}Perlu (1){% elif xgb_result == 0 %}Tidak (0){% endif %}
+          </strong>
+          <br>
+          <span style="font-size:13px;color:var(--muted);display:block;margin-top:4px;">
+            <em>
+              Keterangan hasil: Menunjukkan apakah tanaman membutuhkan irigasi atau tidak.
+              <br>
+              <b>Sangat Perlu (2):</b> Tanaman sangat membutuhkan irigasi.<br>
+              <b>Perlu (1):</b> Tanaman membutuhkan irigasi.<br>
+              <b>Tidak (0):</b> Tanaman tidak membutuhkan irigasi.
+            </em>
+          </span>
+        </p>
+        {% endif %}
+      </div>
+      
+      <div class="card" style="margin-bottom:18px;">
+        <h3 style="margin:0 0 10px 0;">Riwayat Prediksi</h3>
+        <div class="table-wrap">
+          <table class="info-table riwayat-table" style="font-size:13px;width:100%;border-collapse:separate;border-spacing:0;">
+            <thead>
+              <tr>
+                <th style="width:140px;text-align:center;">Waktu</th>
+                <th style="width:100px;text-align:center;">Tanaman</th>
+                <th style="width:120px;text-align:center;">Jenis Tanah</th>
+                <th style="width:160px;text-align:center;">Tahap Bibit</th>
+                <th style="width:60px;text-align:center;">MOI</th>
+                <th style="width:80px;text-align:center;">Suhu (°C)</th>
+                <th style="width:110px;text-align:center;">Kelembapan (%)</th>
+                <th style="width:90px;text-align:center;">Hasil</th>
+                <th style="width:90px;text-align:center;">Model</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in history %}
+              <tr>
+                <td style="text-align:center;">{{ item.waktu }}</td>
+                <td style="text-align:center;">{{ item.crop_id }}</td>
+                <td style="text-align:center;">{{ item.soil_type }}</td>
+                <td style="text-align:center;">{{ item.seedling_stage }}</td>
+                <td style="text-align:center;">{{ item.moi }}</td>
+                <td style="text-align:center;">{{ item.temp }}</td>
+                <td style="text-align:center;">{{ item.humidity }}</td>
+                <td style="text-align:center;">
+                  {% if item.result == 2 %}Sangat Perlu (2){% elif item.result == 1 %}Perlu (1){% elif item.result == 0 %}Tidak (0){% else %}-{% endif %}
+                </td>
+                <td style="text-align:center;">
+                  {% if item.model_name == 'XGBoost' %}XGBoost{% else %}Random Forest{% endif %}
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="9" style="text-align:center;color:var(--muted);">Belum ada riwayat prediksi.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <div class="card" style="margin-bottom:18px;">
+        <h3 style="margin-top:0;">Contoh Data Sensor</h3>
+        <div class="table-wrap">
+          <table class="info-table contoh-table" style="font-size:13px;width:100%;border-collapse:separate;border-spacing:0;">
+            <thead>
+              <tr>
+                <th style="width:100px;text-align:center;">crop ID</th>
+                <th style="width:120px;text-align:center;">soil_type</th>
+                <th style="width:160px;text-align:center;">Seedling Stage</th> 
+                <th style="width:60px;text-align:center;">MOI</th>
+                <th style="width:80px;text-align:center;">temp</th>
+                <th style="width:110px;text-align:center;">humidity</th>
+                <th style="width:90px;text-align:center;">result</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="text-align:center;">Wheat</td>
+                <td style="text-align:center;">Black Soil</td>
+                <td style="text-align:center;">Germination</td>
+                <td style="text-align:center;">1</td>
+                <td style="text-align:center;">25</td>
+                <td style="text-align:center;">80.0</td>
+                <td style="text-align:center;">1</td>
+              </tr>
+              <tr>
+                <td style="text-align:center;">Wheat</td>
+                <td style="text-align:center;">Black Soil</td>
+                <td style="text-align:center;">Germination</td>
+                <td style="text-align:center;">2</td>
+                <td style="text-align:center;">26</td>
+                <td style="text-align:center;">77.0</td>
+                <td style="text-align:center;">1</td>
+              </tr>
+              <tr>
+                <td style="text-align:center;">Wheat</td>
+                <td style="text-align:center;">Black Soil</td>
+                <td style="text-align:center;">Germination</td>
+                <td style="text-align:center;">3</td>
+                <td style="text-align:center;">27</td>
+                <td style="text-align:center;">74.0</td>
+                <td style="text-align:center;">1</td>
+              </tr>
+              <tr>
+                <td style="text-align:center;">Wheat</td>
+                <td style="text-align:center;">Black Soil</td>
+                <td style="text-align:center;">Germination</td>
+                <td style="text-align:center;">4</td>
+                <td style="text-align:center;">28</td>
+                <td style="text-align:center;">71.0</td>
+                <td style="text-align:center;">1</td>
+              </tr>
+              <tr>
+                <td style="text-align:center;">Wheat</td>
+                <td style="text-align:center;">Black Soil</td>
+                <td style="text-align:center;">Germination</td>
+                <td style="text-align:center;">5</td>
+                <td style="text-align:center;">29</td>
+                <td style="text-align:center;">68.0</td>
+                <td style="text-align:center;">1</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="color:var(--muted);margin-top:8px;">Fitur: crop ID, soil_type, Seedling Stage, MOI (Kelembapan Tanah), temp (Suhu °C), humidity (%), result (Kebutuhan Irigasi)</p>
+      </div>
+      
+      <div class="card" style="margin-bottom:18px;">
+        <h3 style="margin-top:0;">Insight & Analisis Data</h3>
+        <ul style="margin:0 0 0 18px;">
+          <li>Distribusi kelas “result” tidak seimbang, kelas 0 jauh lebih banyak dari kelas 1.</li>
+          <li>MOI menjadi faktor paling signifikan membedakan kebutuhan irigasi.</li>
+          <li>Tidak ada missing value, dataset bersih dan siap digunakan.</li>
+          <li>Fitur kategorikal soil_type dan Seedling Stage relevan untuk prediksi.</li>
+          <li>Korelasi paling kuat antara MOI dan label “result”.</li>
+          <li>Dataset cocok untuk model klasifikasi kebutuhan irigasi.</li>
+        </ul>
+      </div>
+      
+      <div class="card" style="margin-bottom:18px;">
+        <h3 style="margin-top:0;">Metodologi Singkat</h3>
+        <ol style="margin:0 0 0 18px;">
+          <li>EDA: Statistik dasar, distribusi fitur, korelasi antar variabel.</li>
+          <li>Pra-pemrosesan: Label encoding, scaling, feature selection.</li>
+          <li>Pemodelan: Decision Tree, Random Forest, KNN.</li>
+          <li>Evaluasi: Akurasi, confusion matrix, feature importance.</li>
+          <li>Deployment: Form prediksi & dashboard visualisasi.</li>
+        </ol>
+      </div>
+      
+      <div class="card" style="margin-bottom:18px;background:linear-gradient(90deg,#e0f7fa,#fffde7);">
+        <h3 style="margin-top:0;">Kesimpulan</h3>
+        <p>
+          Tujuan proyek tercapai dengan baik: model machine learning mampu memprediksi kebutuhan irigasi tanaman secara akurat berdasarkan data sensor pertanian. Model XGBoost dan Random Forest menunjukkan performa sangat tinggi, dengan akurasi mendekati sempurna pada data uji. Fitur seperti MOI, soil_type, dan Seedling Stage terbukti sangat berpengaruh dalam prediksi.
+        </p>
+        <p>
+          Untuk pengembangan lebih lanjut, disarankan melakukan evaluasi pada data eksternal untuk memastikan generalisasi model, serta menambah fitur lokasi dan waktu agar prediksi lebih kontekstual. Integrasi dengan sistem monitoring real-time dan rekomendasi tindakan otomatis dapat meningkatkan manfaat bagi petani dan stakeholder pertanian.
+        </p>
+      </div>
+    </section>
+
+    <section id="panel-dashboard" class="panel">
+      <div class="dashboard-grid">
+        <div class="card">
+          <h3>Distribusi Kelas</h3>
+          <canvas id="chart-classes" height="160"></canvas>
+        </div>
+        <div class="card">
+          <h3>Ringkasan Fitur Numerik</h3>
+          <canvas id="chart-numeric" height="160"></canvas>
+        </div>
+        
+        <div class="card">
+          <h3>Rasio Ketidakseimbangan</h3>
+          <canvas id="chart-imbalance" height="160"></canvas>
+        </div>
+        <div class="card">
+          <h3>Distribusi Jenis Fitur</h3>
+          <canvas id="chart-featuretype" height="160"></canvas>
+        </div>
+        <div class="card wide-card" style="display:flex;gap:24px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:220px;">
+            <h3 style="margin-bottom:0.5em;">Variansi Fitur Numerik</h3>
+            <canvas id="chart-variance" height="140"></canvas>
+          </div>
+          <div style="flex:1;min-width:220px;">
+            <h3 style="margin-bottom:0.5em;">Standar Deviasi Fitur Numerik</h3>
+            <canvas id="chart-stddev" height="140"></canvas>
+          </div>
+        </div>
+        
+        <div class="card wide-card" style="display:flex;gap:24px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:220px;">
+            <h3 style="margin-bottom:0.5em;">Confusion Matrix (Random Forest)</h3>
+            <canvas id="chart-confusion" height="180"></canvas>
+          </div>
+          <div style="flex:1;min-width:220px;">
+            <h3 style="margin-bottom:0.5em;">Feature Importance (Random Forest)</h3>
+            <canvas id="chart-importance" height="180"></canvas>
+          </div>
+        </div>
+        <div class="card wide-card">
+          <h3>Perbandingan Akurasi Model</h3>
+          <canvas id="chart-accuracy" height="140"></canvas>
+        </div>
+        <div class="card wide-card">
+          <h3>Info Dataset & Model</h3>
+          <table class="info-table">
+            <tbody id="info-table-body"></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Jenis Fitur</h3>
+          <div class="chip-wrap" id="chip-features"></div>
+        </div>
+        <div class="card">
+          <h3>Aksi Cepat</h3>
+          <div class="actions">
+            <button id="go-predict" class="btn primary small">&#128221; Buka Form Prediksi</button>
+            <button id="download-model" class="btn ghost small">&#128190; Model (model1.joblib)</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>AgriML — visual dashboard • dibuat modern & terang</p>
+  </footer>
+
+  <script>
+    
+    const ds = {
+      dataset_info: {
+        total_rows: 16411,
+        total_columns: 7,
+        num_features: 6,
+        target_column: 'result',
+        feature_names: ['crop ID','soil_type','Seedling Stage','MOI','temp','humidity'],
+        missing_values_total: 0,
+        missing_values_per_column: {'crop ID':0,'soil_type':0,'Seedling Stage':0,'MOI':0,'temp':0,'humidity':0,'result':0},
+        duplicate_rows: 0
+      },
+      target_info: {
+        num_classes: 3,
+        classes: [0,1,2],
+        class_distribution: {0:9062,1:6227,2:1122},
+        class_distribution_percent: {0:55.22,1:37.94,2:6.84},
+        majority_class: 0,
+        minority_class: 2
+      },
+      model_info: { model_name: 'Random Forest', estimator_type:'RandomForestClassifier', is_pipeline:true, pipeline_steps:['pre','clf'], supports_probability:true, supports_multiclass:true, num_features_input:6 },
+      training_result: { accuracy: 0.992, error_rate:0.008, correct_predictions_estimate:16281, incorrect_predictions_estimate:129 },
+      feature_types: { numeric_features: ['MOI','temp','humidity'], categorical_features:['crop ID','soil_type','Seedling Stage'] },
+      numeric_feature_statistics: {
+        MOI:{min:1.0,max:100.0,mean:43.7,variance:737.68,std:27.16},
+        temp:{min:13.0,max:46.0,mean:28.8,variance:94.12,std:9.70},
+        humidity:{min:15.0,max:91.0,mean:63.5,variance:512.16,std:22.63}
+      },
+      model_file_info: { model_file:'model1.joblib', ready_for_deployment:true }
+    };
+
+    
+    const btnPredict = document.getElementById('nav-predict');
+    const btnDashboard = document.getElementById('nav-dashboard');
+    const panelPredict = document.getElementById('panel-predict');
+    const panelDashboard = document.getElementById('panel-dashboard');
+
+    function showPredict() {
+      btnPredict.classList.add('active');
+      btnDashboard.classList.remove('active');
+      panelPredict.classList.add('active-panel');
+      panelDashboard.classList.remove('active-panel');
+      window.scrollTo({top: 0});
+    }
+    function showDashboard() {
+      btnDashboard.classList.add('active');
+      btnPredict.classList.remove('active');
+      panelDashboard.classList.add('active-panel');
+      panelPredict.classList.remove('active-panel');
+      window.scrollTo({top: 0});
+      chartClasses && chartClasses.resize();
+      chartNumeric && chartNumeric.resize();
+    }
+    btnPredict.onclick = showPredict;
+    btnDashboard.onclick = showDashboard;
+    document.getElementById('to-dashboard').onclick = showDashboard;
+    document.getElementById('go-predict').onclick = showPredict;
+
+    
+    const ctx1 = document.getElementById('chart-classes').getContext('2d');
+    const chartClasses = new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(ds.target_info.class_distribution).map(k=>`Class ${k}`),
+        datasets: [{
+          label: 'Count',
+          data: Object.values(ds.target_info.class_distribution),
+          backgroundColor: ['#0ea5e9','#ffd500','#60a5fa'],
+          borderRadius: 8,
+          barThickness: 36
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display:false }, tooltip: { mode:'index' } },
+        scales: { y: { beginAtZero:true, ticks:{precision:0} } }
+      }
+    });
+
+    const ctx2 = document.getElementById('chart-numeric').getContext('2d');
+    const chartNumeric = new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(ds.numeric_feature_statistics),
+        datasets: [
+          { label: 'Min', data: Object.values(ds.numeric_feature_statistics).map(f=>f.min), backgroundColor:'#60a5fa' },
+          { label: 'Mean', data: Object.values(ds.numeric_feature_statistics).map(f=>f.mean), backgroundColor:'#0ea5e9' },
+          { label: 'Max', data: Object.values(ds.numeric_feature_statistics).map(f=>f.max), backgroundColor:'#ffd500' }
+        ]
+      },
+      options: {
+        responsive:true,
+        plugins:{ tooltip:{mode:'index'} },
+        interaction:{ mode:'index', intersect:false },
+        scales: { y:{ beginAtZero:true } }
+      }
+    });
+
+    
+    const ctxImb = document.getElementById('chart-imbalance').getContext('2d');
+    new Chart(ctxImb, {
+      type: 'pie',
+      data: {
+        labels: ['Majority Class', 'Minority Class'],
+        datasets: [{
+          data: [
+            ds.target_info.class_distribution[ds.target_info.majority_class],
+            ds.target_info.class_distribution[ds.target_info.minority_class]
+          ],
+          backgroundColor: ['#0ea5e9', '#f87171']
+        }]
+      },
+      options: {
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { mode: 'index' }
+        }
+      }
+    });
+
+    
+    const ctxFeatType = document.getElementById('chart-featuretype').getContext('2d');
+    new Chart(ctxFeatType, {
+      type: 'bar',
+      data: {
+        labels: ['Numeric', 'Categorical'],
+        datasets: [{
+          label: 'Feature Count',
+          data: [
+            ds.feature_types.numeric_features.length,
+            ds.feature_types.categorical_features.length
+          ],
+          backgroundColor: ['#34d399', '#a78bfa'],
+          borderRadius: 8,
+          barThickness: 28
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { mode: 'index' }
+        },
+        scales: {
+          x: { beginAtZero: true, precision: 0, ticks: { stepSize: 1 } }
+        }
+      }
+    });
+
+    
+    const ctxVar = document.getElementById('chart-variance').getContext('2d');
+    new Chart(ctxVar, {
+      type: 'line',
+      data: {
+        labels: Object.keys(ds.numeric_feature_statistics),
+        datasets: [
+          {
+            label: 'Variance',
+            data: Object.values(ds.numeric_feature_statistics).map(f=>f.variance),
+            borderColor: '#a78bfa',
+            backgroundColor: 'rgba(167,139,250,0.15)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 5,
+            pointBackgroundColor: '#a78bfa'
+          }
+        ]
+      },
+      options: {
+        responsive:true,
+        plugins:{ legend:{position:'bottom'}, tooltip:{mode:'index'} },
+        interaction:{ mode:'index', intersect:false },
+        scales: { y:{ beginAtZero:true } }
+      }
+    });
+
+    
+    const ctxStd = document.getElementById('chart-stddev').getContext('2d');
+    new Chart(ctxStd, {
+      type: 'line',
+      data: {
+        labels: Object.keys(ds.numeric_feature_statistics),
+        datasets: [
+          {
+            label: 'Std Dev',
+            data: Object.values(ds.numeric_feature_statistics).map(f=>f.std),
+            borderColor: '#34d399',
+            backgroundColor: 'rgba(52,211,153,0.15)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 5,
+            pointBackgroundColor: '#34d399'
+          }
+        ]
+      },
+      options: {
+        responsive:true,
+        plugins:{ legend:{position:'bottom'}, tooltip:{mode:'index'} },
+        interaction:{ mode:'index', intersect:false },
+        scales: { y:{ beginAtZero:true } }
+      }
+    });
+
+    
+    const confusionMatrix = [
+      [1810, 0, 3],
+      [0, 1245, 1],
+      [11, 11, 202]
+    ];
+    const confusionLabels = ['0', '1', '2'];
+
+    
+    const featureImportances = [0.08, 0.09, 0.07, 0.36, 0.21, 0.19];
+    
+
+    
+    const modelAccuracies = [
+      { name: 'Decision Tree', acc: 0.9119707584526348 },
+      { name: 'Random Forest', acc: 0.9920804142552544 },
+      { name: 'KNN', acc: 0.9442583003350594 }
+    ];
+
+    
+    const ctxConf = document.getElementById('chart-confusion').getContext('2d');
+    new Chart(ctxConf, {
+      type: 'bar',
+      data: {
+        labels: confusionLabels,
+        datasets: [
+          {
+            label: 'Predicted 0',
+            data: confusionMatrix.map(row => row[0]),
+            backgroundColor: '#60a5fa'
+          },
+          {
+            label: 'Predicted 1',
+            data: confusionMatrix.map(row => row[1]),
+            backgroundColor: '#0ea5e9'
+          },
+          {
+            label: 'Predicted 2',
+            data: confusionMatrix.map(row => row[2]),
+            backgroundColor: '#ffd500'
+          }
+        ]
+      },
+      options: {
+        plugins: { tooltip: { mode: 'index' }, legend: { position: 'bottom' } },
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { stacked: true, title: { display: true, text: 'Actual Class' } },
+          y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Count' } }
+        }
+      }
+    });
+
+    
+    const ctxImp = document.getElementById('chart-importance').getContext('2d');
+    new Chart(ctxImp, {
+      type: 'bar',
+      data: {
+        labels: ds.dataset_info.feature_names,
+        datasets: [{
+          label: 'Importance',
+          data: featureImportances,
+          backgroundColor: [
+            '#a78bfa', '#34d399', '#f87171', '#0ea5e9', '#ffd500', '#60a5fa'
+          ]
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true, max: 0.5 }
+        }
+      }
+    });
+
+    
+    const ctxAcc = document.getElementById('chart-accuracy').getContext('2d');
+    new Chart(ctxAcc, {
+      type: 'bar',
+      data: {
+        labels: modelAccuracies.map(m => m.name),
+        datasets: [{
+          label: 'Accuracy',
+          data: modelAccuracies.map(m => (m.acc * 100).toFixed(2)),
+          backgroundColor: ['#a78bfa', '#34d399', '#f87171']
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true, max: 100, title: { display: true, text: 'Accuracy (%)' } }
+        }
+      }
+    });
+
+    
+    const tableBody = document.getElementById('info-table-body');
+    const addRow = (k,v)=> {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="td-key">${k}</td><td class="td-val">${v}</td>`;
+      tableBody.appendChild(tr);
+    };
+    addRow('Total rows', ds.dataset_info.total_rows);
+    addRow('Duplicate rows', ds.dataset_info.duplicate_rows);
+    addRow('Features', ds.dataset_info.feature_names.join(', '));
+    addRow('Numeric features', ds.feature_types.numeric_features.join(', '));
+    addRow('Categorical features', ds.feature_types.categorical_features.join(', '));
+    addRow('Target column', ds.dataset_info.target_column);
+    addRow('Model 1', ds.model_info.model_name + ' ('+ ds.model_info.estimator_type +')');
+    addRow('Model 2', 'XGBoost (XGBClassifier)');
+    addRow('Accuracy Model 1', (ds.training_result.accuracy*100).toFixed(2) + '%');
+    addRow('Ready deployment', ds.model_file_info.ready_for_deployment ? 'Yes' : 'No');
+
+    
+    const chipFeatures = document.getElementById('chip-features');
+    const addChip = (label, color='#60a5fa')=> {
+      const span = document.createElement('span');
+      span.className = 'chip';
+      span.style.backgroundColor = color;
+      span.innerText = label;
+      chipFeatures.appendChild(span);
+    };
+    ds.feature_types.numeric_features.forEach(f=>addChip(f, '#34d399'));
+    ds.feature_types.categorical_features.forEach(f=>addChip(f, '#a78bfa'));
+
+    
+    let resizeTimeout;
+    window.onresize = ()=> {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        if(panelDashboard.classList.contains('active-panel')) {
+          chartClasses.resize();
+          chartNumeric.resize();
+          ctxImb && ctxImb.resize();
+          ctxFeatType && ctxFeatType.resize();
+          ctxVar && ctxVar.resize();
+          ctxStd && ctxStd.resize();
+        }
+      }, 250);
+    };
+
+    
+    function setTheme(mode) {
+      if(mode === 'dark') {
+        document.body.classList.add('dark-theme');
+        document.getElementById('toggle-theme').innerText = '☀️';
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.body.classList.remove('dark-theme');
+        document.getElementById('toggle-theme').innerText = '🌙';
+        localStorage.setItem('theme', 'light');
+      }
+    }
+    document.getElementById('toggle-theme').onclick = function() {
+      if(document.body.classList.contains('dark-theme')) {
+        setTheme('light');
+      } else {
+        setTheme('dark');
+      }
+    };
+    
+    (function() {
+      const saved = localStorage.getItem('theme');
+      if(saved === 'dark') setTheme('dark');
+      else setTheme('light');
+    })();
+  </script>
+  <style>
+    
+    .riwayat-table th, .riwayat-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: middle;
+    }
+    .riwayat-table th {
+      background: #f8fafc;
+      font-weight: 700;
+      color: #0f172a;
+      font-size: 13px;
+    }
+    .riwayat-table tr:last-child td {
+      border-bottom: none;
+    }
+    .contoh-table th, .contoh-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: middle;
+    }
+    .contoh-table th {
+      background: #f8fafc;
+      font-weight: 700;
+      color: #0f172a;
+      font-size: 13px;
+    }
+    .contoh-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    
+    body.dark-theme {
+      --bg: #18181b;
+      --card: #23232a;
+      --accent: #38bdf8;
+      --accent-2: #facc15;
+      --muted: #a1a1aa;
+      color: #e5e7eb;
+      background: var(--bg);
+    }
+    body.dark-theme .card,
+    body.dark-theme .card-glow {
+      background: var(--card);
+      color: #e5e7eb;
+    }
+    body.dark-theme .topbar {
+      background: #23232a;
+      color: #e5e7eb;
+    }
+    body.dark-theme .nav-btn {
+      color: #e5e7eb;
+      background: transparent;
+    }
+    body.dark-theme .nav-btn.active {
+      background: linear-gradient(90deg,var(--accent),#60a5fa);
+      color: #fff;
+    }
+    body.dark-theme .btn.primary {
+      background: linear-gradient(90deg,var(--accent),#60a5fa);
+      color: #fff;
+    }
+    body.dark-theme .btn.ghost {
+      background: transparent;
+      border: 1px solid #444;
+      color: var(--muted);
+    }
+    body.dark-theme .btn.ghost:hover, body.dark-theme .btn.ghost:focus {
+      background: #23232a;
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    body.dark-theme .info-table th,
+    body.dark-theme .riwayat-table th,
+    body.dark-theme .contoh-table th {
+      background: #23232a;
+      color: #e5e7eb;
+    }
+    body.dark-theme .info-table td,
+    body.dark-theme .riwayat-table td,
+    body.dark-theme .contoh-table td {
+      color: #e5e7eb;
+      border-bottom: 1px solid #333;
+    }
+    body.dark-theme .footer {
+      color: #a1a1aa;
+    }
+    body.dark-theme .chip {
+      color: #e5e7eb;
+    }
+    body.dark-theme .chip-cat {
+      background: linear-gradient(90deg,#23232a,#23232a);
+      color: #facc15;
+    }
+    body.dark-theme .chip-num {
+      background: linear-gradient(90deg,#23232a,#23232a);
+      color: #38bdf8;
+    }
+    body.dark-theme .message {
+      color: #facc15;
+    }
+    body.dark-theme .table-wrap {
+      background: #23232a;
+    }
+    body.dark-theme .form-row label {
+      color: #a1a1aa;
+    }
+    body.dark-theme select,
+    body.dark-theme input[type="number"],
+    body.dark-theme input[type="text"] {
+      background: #18181b;
+      color: #e5e7eb;
+      border: 1px solid #333;
+    }
+    body.dark-theme select:focus,
+    body.dark-theme input:focus {
+      background: #23232a;
+      border-color: var(--accent);
+    }
+    body.dark-theme select:hover,
+    body.dark-theme input:hover {
+      border-color: var(--accent-2);
+    }
+    body.dark-theme .btn.primary:hover, body.dark-theme .btn.primary:focus {
+      background: linear-gradient(90deg,#38bdf8,#facc15);
+      color: #fff;
+      box-shadow: 0 6px 24px 0 rgba(56,189,248,0.18);
+    }
+    body.dark-theme .card {
+      box-shadow: 0 6px 20px rgba(16,24,40,0.18);
+    }
+    body.dark-theme .card-glow {
+      box-shadow: 0 6px 24px rgba(56,189,248,0.10);
+    }
+    body.dark-theme .dashboard-grid .card {
+      background: #23232a;
+    }
+    body.dark-theme .dashboard-grid .wide-card {
+      background: #23232a;
+    }
+    body.dark-theme .actions .btn {
+      color: #e5e7eb;
+    }
+    body.dark-theme .actions .btn.primary {
+      background: linear-gradient(90deg,var(--accent),#60a5fa);
+      color: #fff;
+    }
+    body.dark-theme .actions .btn.ghost {
+      background: transparent;
+      border: 1px solid #444;
+      color: var(--muted);
+    }
+    body.dark-theme .actions .btn.ghost:hover, body.dark-theme .actions .btn.ghost:focus {
+      background: #23232a;
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    body.dark-theme .dashboard-grid .card h3 {
+      color: #e5e7eb;
+    }
+    body.dark-theme .dashboard-grid .card .chip-wrap .chip {
+      color: #e5e7eb;
+    }
+    body.dark-theme .dashboard-grid .card .chip-wrap .chip-cat {
+      background: linear-gradient(90deg,#23232a,#23232a);
+      color: #facc15;
+    }
+    body.dark-theme .dashboard-grid .card .chip-wrap .chip-num {
+      background: linear-gradient(90deg,#23232a,#23232a);
+      color: #38bdf8;
+    }
+  </style>
+</body>
+</html>
